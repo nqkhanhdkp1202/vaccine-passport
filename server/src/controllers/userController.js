@@ -1,5 +1,12 @@
 const jwt = require("jsonwebtoken");
-const { User, UserVaccine, UserPlace } = require("../models");
+const {
+  User,
+  UserVaccine,
+  UserPlace,
+  VaccineLot,
+  Vaccine,
+  Place,
+} = require("../models");
 
 exports.createUser = async (req, res) => {
   const { phoneNumber, idNumber } = req.body;
@@ -88,12 +95,15 @@ exports.updateById = async (req, res) => {
     }
 
     user = await User.findById(req.params.id);
+    if (!user) {
+      res.status(500).json("User not found");
+    }
     user.set(req.body);
     await user.save();
     res.status(200).json(user);
   } catch (error) {
-    console.log(error);
     res.status(500).json(error);
+    console.log(error);
   }
 };
 
@@ -109,7 +119,45 @@ exports.deteleById = async (req, res) => {
     }
 
     res.status(200).json("User deleted successfully");
-    
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(error);
+  }
+};
+
+exports.vaccinated = async (req, res) => {
+  const { userId, vaccineId, vaccineLotId } = req.body;
+  try {
+    const newVaccine = new UserVaccine({
+      user: userId,
+      vaccine: vaccineId,
+      vaccineLot: vaccineLotId,
+    });
+    const savedVaccine = await newVaccine.save();
+    await VaccineLot.findByIdAndUpdate(
+      {
+        _id: vaccineLotId,
+      },
+      {
+        $inc: { vaccinated: +1 },
+      }
+    );
+    savedVaccine._doc.vaccine = await Vaccine.findById(vaccineId);
+    savedVaccine._doc.vaccineLot = await VaccineLot.findById(vaccineLotId);
+
+    res.status(201).json(savedVaccine);
+  } catch (error) {
+    res.status(500).json(error);
+    console.log(error);
+  }
+};
+
+exports.getAllPlace = async (req, res) => {
+  try {
+    const placeList = await Place.find({
+      creator: req.params.userId,
+    });
+    res.status(200).json(placeList);
   } catch (error) {
     console.log(error);
     res.status(500).json(error);
