@@ -163,3 +163,29 @@ exports.getAllPlace = async (req, res) => {
     res.status(500).json(error);
   }
 };
+
+exports.checkinPlace = async (req, res) => {
+  try { 
+    const newVisit = new UserPlace({
+      user: req.user._id,
+      place: req.body.placeId,
+    });
+    const saveUserplace = await newVisit.save();
+    res.status(201).json(saveUserplace);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(error);
+  }
+};
+
+exports.getListCheckedIn = async (req, res) => {
+  try { 
+    const list = await UserPlace.find({
+      user: req.params.userId,
+    }).populate('place');
+    res.status(200).json(list);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json(error);
+  }
+};
